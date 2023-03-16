@@ -3,11 +3,11 @@ using UnityEngine;
 
 namespace Scripts
 {
-    public class ObjectsList : MonoBehaviour
+    public static class ObjectsList
     {
-        public List<GameObject> Objects = new List<GameObject>();
+        public static List<GameObject> Objects = new List<GameObject>();
 
-        public void RemoveFromList(GameObject go)
+        public static void RemoveFromList(GameObject go)
         {
             Objects.Remove(go);
         }
