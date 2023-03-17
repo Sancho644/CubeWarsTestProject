@@ -30,8 +30,6 @@ namespace Scripts
         {
             Gizmos.color = Color.red;
             Gizmos.DrawSphere(_target.position, _radius);
-
-            UnityEditor.Handles.DrawLine(transform.position, _target.position);
         }
 #endif
     }

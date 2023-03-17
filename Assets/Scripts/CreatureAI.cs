@@ -1,33 +1,41 @@
-﻿using UnityEngine;
+﻿using Scripts.ObjectPool;
+using System;
+using UnityEngine;
 using UnityEngine.AI;
 
 namespace Scripts
 {
     public class CreatureAI : MonoBehaviour
     {
-        [SerializeField] private ObjectsList _list;
         [SerializeField] private LineCastCheck _check;
-        [SerializeField] private float _closeDistance = 1.5f;
         [SerializeField] private float _attackCooldown = 1f;
 
+        private PoolItem _poolItem;
         private NavMeshAgent _agent;
         private GameObject _object;
         private float _distance;
         private float _lastAttack;
+        private int _score;
+        private int _defaultScore;
+
+        public event Action<int> OnChangeScore;
 
         private void Awake()
         {
+            _poolItem = GetComponent<PoolItem>();
             _agent = GetComponent<NavMeshAgent>();
         }
 
         private void Start()
         {
-            StartSearchEnemy();
+            _defaultScore = _score;
+
+            _poolItem.OnRestart += OnRestart;
         }
 
         private void Update()
         {
-            if (_object == null)
+            if (_object == null || !_object.activeInHierarchy)
             {
                 StartSearchEnemy();
                 return;
@@ -35,13 +43,24 @@ namespace Scripts
 
             _distance = Vector3.Distance(transform.position, _object.transform.position);
 
-            if (_distance > _closeDistance)
+            if (_distance > _agent.stoppingDistance)
             {
-                _agent.enabled = true;
                 _agent.destination = _object.transform.position;
             }
 
-            if (_distance <= _closeDistance) Attack();
+            if (_distance <= _agent.stoppingDistance) Attack();
+        }
+
+        private void OnRestart()
+        {
+            _score = _defaultScore;
+        }
+
+        public void ModifyScore()
+        {
+            _score++;
+            _object = null;
+            OnChangeScore?.Invoke(_score);
         }
 
         private void Attack()
@@ -49,13 +68,6 @@ namespace Scripts
             if (Time.time - _lastAttack < _attackCooldown) return;
 
             _lastAttack = Time.time;
-            _agent.enabled = false;
-
-            if (_object == null)
-            {
-                StartSearchEnemy();
-                return;
-            }
 
             transform.LookAt(_object.transform);
             _check.Check();
@@ -63,16 +75,16 @@ namespace Scripts
 
         public void StartSearchEnemy()
         {
-            for (int i = 0; i < _list.Objects.Count; i++)
+            var listCount = ObjectsList.Objects.Count;
+
+            for (int i = 0; i < listCount; i++)
             {
-                var rand = Random.Range(0, _list.Objects.Count);
-                var id = _list.Objects[rand].GetInstanceID();
+                var rand = UnityEngine.Random.Range(0, listCount);
+                var cube = ObjectsList.Objects[rand];
 
-                if (gameObject.GetInstanceID() == id) continue;
+                if (gameObject == cube) break;
 
-                Debug.Log(_list.Objects[rand]);
-                _object = _list.Objects[rand];
-                break;
+                _object = ObjectsList.Objects[rand];
             }
         }
     }
